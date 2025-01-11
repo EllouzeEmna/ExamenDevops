@@ -1,65 +1,86 @@
 pipeline {
     agent any
 
+    environment {
+        DOCKERHUB_USERNAME = 'emnaellouze123487'  // Replace with your Docker Hub username
+        DOCKERHUB_PASSWORD = credentials('DockerHubPassword')  // Correct credential ID for Docker Hub password
+        VM2_USER = 'recette'           // Replace with VM2 SSH user
+        VM2_IP = '192.168.43.207'     // Replace with VM2 IP address
+        VM2_APP_PATH = '~/app'        // Directory on VM2 to deploy
+        DOCKER_CLI_EXPERIMENTAL = "enabled"
+    }
+
     stages {
-        stage('Clone Repository') {
+        stage('Checkout Code') {
             steps {
-                // Cloner le dépôt Git
-                git 'https://github.com/EllouzeEmna/ExamenDevops.git'
+                git url: 'https://github.com/EllouzeEmna/ExamenDevops.git', branch: 'main'
             }
         }
 
-        stage('Build Backend Docker Image') {
+        stage('Build Docker Images') {
+            steps {
+                sh 'docker-compose build'
+            }
+        }
+
+        stage('Run Backend Tests') {
+            steps {
+                sh '''
+                docker-compose up -d
+                docker-compose exec -T spring-boot-server  
+                docker-compose down
+                '''
+            }
+        }
+
+        stage('Run Frontend Tests') {
+            steps {
+                sh '''
+                docker-compose up -d
+                docker-compose exec angular-14-client 
+                docker-compose down
+                '''
+            }
+        }
+
+        stage('Push Docker Images to Docker Hub') {
             steps {
                 script {
-                    // Récupérer la version basée sur le dernier commit
-                    def version = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
-                    // Construire l'image Docker pour le backend
-                    sh "docker build -t mybackend:${version} ./spring-boot-server"
+                    docker.withRegistry('https://index.docker.io/v1/', 'DockerHubPassword') {
+                        sh 'docker-compose push'
+                    }
                 }
             }
         }
 
-        stage('Push Backend Docker Image') {
+        stage('Deploy on VM2') {
             steps {
-                script {
-                    // Récupérer la version basée sur le dernier commit
-                    def version = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
-                    // Pousser l'image Docker du backend vers le registre
-                    sh "docker push mybackend:${version}"
+                sshagent(['ssh-credentials-ci']) {
+                    sh '''
+                    # Create the app directory on the remote machine
+                    ssh -o StrictHostKeyChecking=no $VM2_USER@$VM2_IP "mkdir -p $VM2_APP_PATH"
+        
+                    # Copy the docker-compose.yml file
+                    scp docker-compose.yml $VM2_USER@$VM2_IP:$VM2_APP_PATH/
+        
+                    # Copy the backend and frontend directories
+                    scp -r spring-boot-server angular-14-client $VM2_USER@$VM2_IP:$VM2_APP_PATH/
+        
+                    # Execute Docker Compose on the remote machine
+                    ssh -o StrictHostKeyChecking=no $VM2_USER@$VM2_IP "
+                        cd $VM2_APP_PATH &&
+                        sudo docker-compose pull &&
+                        sudo docker-compose up -d --build
+                    "
+                    '''
                 }
             }
-        }
+}
+    }
 
-        stage('Build Frontend Docker Image') {
-            steps {
-                script {
-                    // Récupérer la version basée sur le dernier commit
-                    def version = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
-                    // Construire l'image Docker pour le frontend
-                    sh "docker build -t myfrontend:${version} ./angular-14-client"
-                }
-            }
-        }
-
-        stage('Push Frontend Docker Image') {
-            steps {
-                script {
-                    // Récupérer la version basée sur le dernier commit
-                    def version = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
-                    // Pousser l'image Docker du frontend vers le registre
-                    sh "docker push myfrontend:${version}"
-                }
-            }
-        }
-
-        stage('Deploy to Test Environment') {
-            steps {
-                // Copier le fichier docker-compose.yml vers le serveur de test
-                sh "scp docker-compose.yml recette@192.168.43.207:/path/to/project"
-                // Démarrer les services Docker sur le serveur de test
-                sh "ssh recette@192.168.43.207 'cd /path/to/project && docker-compose up -d'"
-            }
+    post {
+        always {
+                cleanWs()            
         }
     }
 }
