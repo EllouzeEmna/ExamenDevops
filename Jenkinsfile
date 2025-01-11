@@ -18,13 +18,16 @@ pipeline {
             }
         }
 
-        stage('DockerHub Login') {
-            steps {
-                withCredentials([string(credentialsId: 'DockerHubPassword', variable: 'DockerHubPassword')]) {
-                    sh "docker login -u ${DOCKERHUB_USERNAME} -p ${DockerHubPassword}"
-                }
-            }
+       stage('DockerHub Login') {
+    steps {
+        withCredentials([string(credentialsId: 'DockerHubPassword', variable: 'DockerHubPassword')]) {
+            sh '''
+                echo $DockerHubPassword | docker login -u ${DOCKERHUB_USERNAME} --password-stdin
+            '''
         }
+    }
+}
+
 
         stage('Build Backend Docker Image') {
             steps {
