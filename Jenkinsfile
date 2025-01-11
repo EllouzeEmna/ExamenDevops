@@ -2,7 +2,7 @@ pipeline {
     agent any
 
     environment {
-        DOCKERHUB_USERNAME = 'emnaellouze123487'  // Docker Hub username
+        DOCKERHUB_USERNAME = 'emnaellouze'  // Docker Hub username
         DOCKERHUB_PASSWORD = credentials('DockerHubPassword')  // Docker Hub password credentials
         VM2_USER = 'recette'           // SSH user for VM2
         VM2_IP = '192.168.43.207'     // IP address of VM2
