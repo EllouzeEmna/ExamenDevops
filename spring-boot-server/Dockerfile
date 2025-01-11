@@ -3,9 +3,6 @@ FROM maven:3.9.5-eclipse-temurin-17 AS build
 
 WORKDIR /app
 
-# Add Maven settings for mirrors
-COPY settings.xml /root/.m2/settings.xml
-
 # Copy the pom.xml and fetch dependencies
 COPY pom.xml ./ 
 RUN mvn dependency:resolve -DskipTests
@@ -21,7 +18,6 @@ WORKDIR /app
 
 # Copy the JAR file from the build stage
 COPY --from=build /app/target/spring-boot-data-jpa-0.0.1-SNAPSHOT.jar app.jar
-
 
 # Expose the application's port
 EXPOSE 8080
