@@ -39,22 +39,23 @@ pipeline {
             }
         }
 
-        stage('Push Backend Docker Image') {
-            steps {
-                script {
-                    def backendVersion = "${DOCKER_TAG}"
-                    docker.withRegistry('https://index.docker.io/v1/', 'DockerHubPassword') {
-                        sh "docker push ${DOCKERHUB_USERNAME}/mybackend:${backendVersion}"
-                    }
-                }
-            }
-        }
+      
 
         stage('Build Frontend Docker Image') {
             steps {
                 script {
                     def frontendVersion = "${DOCKER_TAG}"
                     sh "docker build -t ${DOCKERHUB_USERNAME}/myfrontend:${frontendVersion} ./angular-14-client"
+                }
+            }
+        }
+          stage('Push Backend Docker Image') {
+            steps {
+                script {
+                    def backendVersion = "${DOCKER_TAG}"
+                    docker.withRegistry('https://index.docker.io/v1/', 'DockerHubPassword') {
+                        sh "docker push ${DOCKERHUB_USERNAME}/mybackend:${backendVersion}"
+                    }
                 }
             }
         }
