@@ -19,16 +19,16 @@ pipeline {
         }
 
         
- stage('DockerHub login') { 
-    steps { 
-        withCredentials([string(credentialsId: 'DockerHubPassword', variable: 'DockerHubPassword')]) { 
-            sh '''
-                echo $DockerHubPassword | docker login -u emnaellouze --password-stdin
-            '''
-        }
-        sh "docker push emnaellouze/angulardockerproject:${DOCKER_TAG}" 
-    } 
-}
+//  stage('DockerHub login') { 
+//     steps { 
+//         withCredentials([string(credentialsId: 'DockerHubPassword', variable: 'DockerHubPassword')]) { 
+//             sh '''
+//                 echo $DockerHubPassword | docker login -u emnaellouze --password-stdin
+//             '''
+//         }
+//         sh "docker push emnaellouze/angulardockerproject:${DOCKER_TAG}" 
+//     } 
+// }
     
         stage('Build Backend Docker Image') {
             steps {
