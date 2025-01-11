@@ -20,7 +20,6 @@ pipeline {
 
         stage('DockerHub Login') {
             steps {
-                // Authentifie Docker une seule fois avant de pousser les images
                 withCredentials([string(credentialsId: 'DockerHubPassword', variable: 'DockerHubPassword')]) {
                     sh "docker login -u ${DOCKERHUB_USERNAME} -p ${DockerHubPassword}"
                 }
@@ -94,10 +93,10 @@ pipeline {
                     # Create the app directory on the remote machine
                     ssh -o StrictHostKeyChecking=no $VM2_USER@$VM2_IP "mkdir -p $VM2_APP_PATH"
         
-                    # Copy the docker-compose.yml file
+                    # Copy the docker-compose.yml file to the remote VM
                     scp docker-compose.yml $VM2_USER@$VM2_IP:$VM2_APP_PATH/
         
-                    # Copy the backend and frontend docker images
+                    # Copy the backend and frontend docker images to the remote VM
                     scp -r spring-boot-server angular-14-client $VM2_USER@$VM2_IP:$VM2_APP_PATH/
         
                     # Execute Docker Compose on the remote machine
