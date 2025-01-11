@@ -5,7 +5,7 @@ pipeline {
         stage('Clone Repository') {
             steps {
                 // Cloner le dépôt Git
-                git 'https://gitlab.com/ahmed.jemal.sfax.iset/etude_de_cas2.git'
+                git 'https://github.com/EllouzeEmna/ExamenDevops.git'
             }
         }
 
@@ -15,7 +15,7 @@ pipeline {
                     // Récupérer la version basée sur le dernier commit
                     def version = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
                     // Construire l'image Docker pour le backend
-                    sh "docker build -t mybackend:${version} ./backend"
+                    sh "docker build -t mybackend:${version} ./spring-boot-server"
                 }
             }
         }
@@ -37,7 +37,7 @@ pipeline {
                     // Récupérer la version basée sur le dernier commit
                     def version = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
                     // Construire l'image Docker pour le frontend
-                    sh "docker build -t myfrontend:${version} ./frontend"
+                    sh "docker build -t myfrontend:${version} ./angular-14-client"
                 }
             }
         }
@@ -56,9 +56,9 @@ pipeline {
         stage('Deploy to Test Environment') {
             steps {
                 // Copier le fichier docker-compose.yml vers le serveur de test
-                sh "scp docker-compose.yml user@recette-server:/path/to/project"
+                sh "scp docker-compose.yml recette@192.168.43.207:/path/to/project"
                 // Démarrer les services Docker sur le serveur de test
-                sh "ssh user@recette-server 'cd /path/to/project && docker-compose up -d'"
+                sh "ssh recette@192.168.43.207 'cd /path/to/project && docker-compose up -d'"
             }
         }
     }
