@@ -18,15 +18,15 @@ pipeline {
             }
         }
 
-        stage('Push Docker Images to Docker Hub') {
-            steps {
-                script {
-                    docker.withRegistry('https://index.docker.io/v1/', 'DockerHubPassword') {
-                        sh 'docker-compose push'
-                    }
-                }
-            }
+       stage('DockerHub Login') {
+    steps {
+        withCredentials([string(credentialsId: 'DockerHubPassword', variable: 'DockerHubPassword')]) {
+            sh '''
+                echo $DockerHubPassword | docker login -u ${DOCKERHUB_USERNAME} --password-stdin
+            '''
         }
+    }
+}
 
 
         stage('Build Backend Docker Image') {
