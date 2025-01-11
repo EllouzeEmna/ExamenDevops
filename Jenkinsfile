@@ -2,11 +2,11 @@ pipeline {
     agent any
 
     environment {
-        DOCKERHUB_USERNAME = 'emnaellouze123487'  // Replace with your Docker Hub username
-        DOCKERHUB_PASSWORD = credentials('DockerHubPassword')  // Correct credential ID for Docker Hub password
-        VM2_USER = 'recette'           // Replace with VM2 SSH user
-        VM2_IP = '192.168.43.207'     // Replace with VM2 IP address
-        VM2_APP_PATH = '~/app'        // Directory on VM2 to deploy
+        DOCKERHUB_USERNAME = 'emnaellouze123487'  // Docker Hub username
+        DOCKERHUB_PASSWORD = credentials('DockerHubPassword')  // Docker Hub password credentials
+        VM2_USER = 'recette'           // SSH user for VM2
+        VM2_IP = '192.168.43.207'     // IP address of VM2
+        VM2_APP_PATH = '~/app'        // Path to deploy on VM2
         DOCKER_CLI_EXPERIMENTAL = "enabled"
     }
 
@@ -17,9 +17,39 @@ pipeline {
             }
         }
 
-        stage('Build Docker Images') {
+        stage('Build Backend Docker Image') {
             steps {
-                sh 'docker-compose build'
+                script {
+                    def backendVersion = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
+                    sh "docker build -t ${DOCKERHUB_USERNAME}/mybackend:${backendVersion} ./spring-boot-server"
+                }
+            }
+        }
+
+        stage('Push Backend Docker Image') {
+            steps {
+                script {
+                    def backendVersion = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
+                    sh "docker push ${DOCKERHUB_USERNAME}/mybackend:${backendVersion}"
+                }
+            }
+        }
+
+        stage('Build Frontend Docker Image') {
+            steps {
+                script {
+                    def frontendVersion = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
+                    sh "docker build -t ${DOCKERHUB_USERNAME}/myfrontend:${frontendVersion} ./angular-14-client"
+                }
+            }
+        }
+
+        stage('Push Frontend Docker Image') {
+            steps {
+                script {
+                    def frontendVersion = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
+                    sh "docker push ${DOCKERHUB_USERNAME}/myfrontend:${frontendVersion}"
+                }
             }
         }
 
@@ -43,16 +73,6 @@ pipeline {
             }
         }
 
-        stage('Push Docker Images to Docker Hub') {
-            steps {
-                script {
-                    docker.withRegistry('https://index.docker.io/v1/', 'DockerHubPassword') {
-                        sh 'docker-compose push'
-                    }
-                }
-            }
-        }
-
         stage('Deploy on VM2') {
             steps {
                 sshagent(['ssh-credentials-ci']) {
@@ -63,9 +83,6 @@ pipeline {
                     # Copy the docker-compose.yml file
                     scp docker-compose.yml $VM2_USER@$VM2_IP:$VM2_APP_PATH/
         
-                    # Copy the backend and frontend directories
-                    scp -r spring-boot-server angular-14-client $VM2_USER@$VM2_IP:$VM2_APP_PATH/
-        
                     # Execute Docker Compose on the remote machine
                     ssh -o StrictHostKeyChecking=no $VM2_USER@$VM2_IP "
                         cd $VM2_APP_PATH &&
@@ -75,12 +92,12 @@ pipeline {
                     '''
                 }
             }
-}
+        }
     }
 
     post {
         always {
-                cleanWs()            
+            cleanWs()
         }
     }
 }
