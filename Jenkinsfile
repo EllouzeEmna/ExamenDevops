@@ -17,6 +17,17 @@ pipeline {
             }
         }
 
+        stage('Login to Docker Hub') {
+            steps {
+                script {
+                    // Login to Docker Hub using credentials
+                    docker.withRegistry('https://index.docker.io/v1/', 'DockerHubPassword') {
+                        echo "Logged in to Docker Hub"
+                    }
+                }
+            }
+        }
+
         stage('Build Backend Docker Image') {
             steps {
                 script {
@@ -30,7 +41,9 @@ pipeline {
             steps {
                 script {
                     def backendVersion = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
-                    sh "docker push ${DOCKERHUB_USERNAME}/mybackend:${backendVersion}"
+                    docker.withRegistry('https://index.docker.io/v1/', 'DockerHubPassword') {
+                        sh "docker push ${DOCKERHUB_USERNAME}/mybackend:${backendVersion}"
+                    }
                 }
             }
         }
@@ -48,7 +61,9 @@ pipeline {
             steps {
                 script {
                     def frontendVersion = sh(returnStdout: true, script: 'git rev-parse --short HEAD').trim()
-                    sh "docker push ${DOCKERHUB_USERNAME}/myfrontend:${frontendVersion}"
+                    docker.withRegistry('https://index.docker.io/v1/', 'DockerHubPassword') {
+                        sh "docker push ${DOCKERHUB_USERNAME}/myfrontend:${frontendVersion}"
+                    }
                 }
             }
         }
