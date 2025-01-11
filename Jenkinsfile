@@ -17,12 +17,11 @@ pipeline {
             }
         }
 
-        stage('Login to Docker Hub') {
+        stage('Push Docker Images to Docker Hub') {
             steps {
                 script {
-                    // Login to Docker Hub using credentials
                     docker.withRegistry('https://index.docker.io/v1/', 'DockerHubPassword') {
-                        echo "Logged in to Docker Hub"
+                        sh 'docker-compose push'
                     }
                 }
             }
